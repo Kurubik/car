@@ -1,4 +1,5 @@
 // Create the physics world
+
 var world = new p2.World({
     doProfiling : true,
     gravity : [ 0, -10 ],
@@ -14,7 +15,6 @@ var plane = new p2.Body({
 });
 plane.addShape(planeShape);
 
-
 var rightWall = new p2.Rectangle(10, 1);
 var rightWallBody = new p2.Body({
     position : [ 29.5, 4.5],
@@ -29,7 +29,7 @@ leftWallBody.addShape(leftWall,0,1.57);
 
 var tromplShape = new p2.Rectangle(10, 1);
 var tromplShapeBody = new p2.Body({
-    position : [ -10, 0.5],
+    position : [ -10, 1.5],
 });
 tromplShapeBody.addShape(tromplShape,0,0.5);
 
@@ -45,11 +45,21 @@ world.addBody(leftWallBody);
 world.addBody(circleShapeBody);
 world.addBody(tromplShapeBody);
 
+
+// Create bonus
+var bonusBody = new p2.Body({
+    mass : 0,
+    position : [ -18, 0.2 ]
+}), bonusShape = new p2.Rectangle(0.5, 0.2);
+bonusBody.addShape(bonusShape,0,1.57);
+world.addBody(bonusBody);
+
+
 // Create chassis
 var chassisBody = new p2.Body({
     mass : 1,
     position : [ -28, 1 ]
-}), chassisShape = new p2.Rectangle(1, 0.5);
+}), chassisShape = new p2.Rectangle(1, 0.2);
 chassisBody.addShape(chassisShape);
 world.addBody(chassisBody);
 
@@ -72,16 +82,22 @@ world.addBody(wheelBody2);
 
 // Disable collisions between chassis and wheels
 // Define bits for each shape type
-var WHEELS = 1, CHASSIS = 2, GROUND = 4, OTHER = 8;
+var WHEELS = 1, CHASSIS = 2, GROUND = 4, BONUS = 5, OTHER = 8;
 
 // Assign groups
 wheelShape.collisionGroup = WHEELS;
 chassisShape.collisionGroup = CHASSIS;
+bonusShape.collisionGroup = BONUS;
 planeShape.collisionGroup = GROUND;
 rightWall.collisionGroup = GROUND;
 leftWall.collisionGroup = GROUND;
 circleShape.collisionGroup = GROUND;
 tromplShape.collisionGroup = GROUND;
+
+// Bonus sensor
+bonusShape.sensor = true;
+
+
 // Wheels can only collide with ground
 wheelShape.collisionMask = GROUND | OTHER;
 
@@ -94,6 +110,12 @@ rightWall.collisionMask = WHEELS | CHASSIS | OTHER;
 leftWall.collisionMask = WHEELS | CHASSIS | OTHER;
 circleShape.collisionMask = WHEELS | CHASSIS | OTHER;
 tromplShape.collisionMask = WHEELS | CHASSIS | OTHER;
+bonusShape.collisionMask = WHEELS | CHASSIS | GROUND | OTHER;
+
+
+
+// Stuff Collide
+
 
 
 // Constrain wheels to chassis
@@ -151,6 +173,7 @@ world.on('addBody', function(evt) {
     evt.body.setDensity(1);
 });
 
+
 // Change the current engine torque with the left/right keys
 window.onkeydown = function(evt) {
     t = 6;
@@ -166,6 +189,8 @@ window.onkeydown = function(evt) {
 window.onkeyup = function() {
     torque = 0;
 };
+
+
 
 Stage(function(stage) {
     stage.viewbox(50, 50).pin('align',-0.5);
