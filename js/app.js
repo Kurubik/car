@@ -9,7 +9,7 @@ var world = new p2.World({
 world.defaultFriction = 100;
 
 // Create ground
-var planeShape = new p2.Rectangle(60, 1);
+var planeShape = new p2.Rectangle(40, 1);
 var plane = new p2.Body({
     position: [0, -1],
 });
@@ -17,19 +17,21 @@ plane.addShape(planeShape);
 
 var rightWall = new p2.Rectangle(10, 1);
 var rightWallBody = new p2.Body({
-    position : [ 29.5, 4.5],
+    mass : 10,
+    position : [ 19.5, 4.5],
 });
 rightWallBody.addShape(rightWall,0,1.57);
 
 var leftWall = new p2.Rectangle(10, 1);
 var leftWallBody = new p2.Body({
-    position : [ -29.5, 4.5],
+    mass : 10,
+    position : [ -19.5, 4.5],
 });
 leftWallBody.addShape(leftWall,0,1.57);
 
 var tromplShape = new p2.Rectangle(10, 1);
 var tromplShapeBody = new p2.Body({
-    position : [ -10, 1.5],
+    position : [ -8, 1.5],
 });
 tromplShapeBody.addShape(tromplShape,0,0.5);
 
@@ -47,18 +49,31 @@ world.addBody(tromplShapeBody);
 
 
 // Create bonus
+var convex = function(){
+    // Create a convex shape.
+    var size = 0.01;
+    var vertices = [];
+    for(var i=0, N=5; i<N; i++){
+        var a = 2*Math.PI / N * i;
+        var vertex = [size*0.5*Math.cos(a), size*0.5*Math.sin(a)]; // Note: vertices are added counter-clockwise
+        vertices.push(vertex);
+    }
+    return new p2.Convex({ vertices: vertices });
+}
+
+
 var bonusBody = new p2.Body({
-    mass : 0,
-    position : [ -18, 0.2 ]
-}), bonusShape = new p2.Rectangle(0.5, 0.2);
-bonusBody.addShape(bonusShape,0,1.57);
+    mass : 1,
+    position : [ -10, 2 ]
+}), bonusShape = new p2.Rectangle(0.5, 0.5);
+bonusBody.addShape(bonusShape);
 world.addBody(bonusBody);
 
 
 // Create chassis
 var chassisBody = new p2.Body({
     mass : 1,
-    position : [ -28, 1 ]
+    position : [ -18, 1 ]
 }), chassisShape = new p2.Rectangle(1, 0.7);
 chassisBody.addShape(chassisShape);
 world.addBody(chassisBody);
@@ -95,26 +110,40 @@ circleShape.collisionGroup = GROUND;
 tromplShape.collisionGroup = GROUND;
 
 // Bonus sensor
-bonusShape.sensor = true;
+//bonusShape.sensor = true;
 
 
 // Wheels can only collide with ground
-wheelShape.collisionMask = GROUND | OTHER;
+wheelShape.collisionMask = GROUND | BONUS | OTHER;
 
 // Chassis can only collide with ground
-chassisShape.collisionMask = GROUND | OTHER;
+chassisShape.collisionMask = GROUND | BONUS | OTHER;
 
 // Ground can collide with wheels and chassis
-planeShape.collisionMask = WHEELS | CHASSIS | OTHER;
-rightWall.collisionMask = WHEELS | CHASSIS | OTHER;
-leftWall.collisionMask = WHEELS | CHASSIS | OTHER;
-circleShape.collisionMask = WHEELS | CHASSIS | OTHER;
-tromplShape.collisionMask = WHEELS | CHASSIS | OTHER;
+planeShape.collisionMask = WHEELS | CHASSIS | BONUS | OTHER;
+rightWall.collisionMask = WHEELS | CHASSIS | BONUS | OTHER;
+leftWall.collisionMask = WHEELS | CHASSIS | BONUS | OTHER;
+circleShape.collisionMask = WHEELS | CHASSIS | BONUS | OTHER;
+tromplShape.collisionMask = WHEELS | CHASSIS | BONUS | OTHER;
 bonusShape.collisionMask = WHEELS | CHASSIS | GROUND | OTHER;
 
 
 
 // Stuff Collide
+
+bonusBody.allowSleep = true;
+bonusBody.sleepSpeedLimit = 0; // Body will feel sleepy if speed<1 (speed is the norm of velocity)
+bonusBody.sleepTimeLimit =  1; // Body falls asleep after 1s of sleepiness
+bonusBody.sleep();
+
+
+
+
+
+if(bonusBody.sleepState == 0){
+console.log('NO.');
+
+    };
 
 
 
@@ -175,13 +204,15 @@ world.on('addBody', function(evt) {
     evt.body.setDensity(1);
 });
 
+world.sleepMode = p2.World.BODY_SLEEPING;
 
 // Change the current engine torque with the left/right keys
 window.onkeydown = function(evt) {
     t = 6;
     switch (evt.keyCode) {
         case 40: // down
-            torque = 400;
+            //torque = 400;
+            console.log(bonusBody);
             break;
         case 39: // right
             torque = -t;
@@ -201,6 +232,6 @@ window.onkeyup = function() {
 
 
 Stage(function(stage) {
-    stage.viewbox(50, 50).pin('align',-0.5);
+    stage.viewbox(30, 30).pin('align',-0.5);
     new Stage.P2(world).appendTo(stage);
 });
